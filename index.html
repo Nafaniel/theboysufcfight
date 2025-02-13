@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Boys UFC Comp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #28a745; /* Green background */
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            color: #fff;
+            margin-bottom: 10px;
+            padding-top: 20px;
+        }
+
+        .fighter-list {
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .fighter-list h3 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .fighter-item {
+            font-size: 1em;
+            color: #333;
+            padding: 5px 0;
+        }
+
+        .fight-form, .bet-section {
+            margin-bottom: 20px;
+        }
+
+        .fight-card {
+            background-color: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+        }
+
+        .fight-card p {
+            margin: 5px 0;
+        }
+
+        .button {
+            background-color: #dc3545;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .button:hover {
+            background-color: #c82333;
+        }
+
+        .bet-input {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .result {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .total-bet {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .bet-details {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .delete-button {
+            color: red;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .fight-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fight-card-header p {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .button {
+                font-size: 0.9em;
+            }
+
+            .bet-input {
+                font-size: 0.9em;
+            }
+
+            .fighter-item {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Boys UFC Comp</h1>
+
+        <!-- Fighter List -->
+        <div class="fighter-list">
+            <h3>The Boys UFC Tournament</h3>
+            <div id="fighter-stats">
+                <!-- Fighter names and their earnings will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Fight Creation Form -->
+        <div class="fight-form">
+            <h3>Create a Fight</h3>
+            <input type="text" id="fighter1-name" placeholder="Fighter 1 Name" class="bet-input">
+            <input type="text" id="fighter2-name" placeholder="Fighter 2 Name" class="bet-input">
+            <input type="number" id="fighter1-payout" placeholder="Fighter 1 Payout" class="bet-input">
+            <input type="number" id="fighter2-payout" placeholder="Fighter 2 Payout" class="bet-input">
+            <button class="button" onclick="createFight()">Create Fight</button>
+        </div>
+
+        <!-- Fight List -->
+        <div id="fight-list">
+            <!-- Dynamic fight cards will appear here -->
+        </div>
+        
+        <!-- Bet Section -->
+        <div class="bet-section">
+            <h3>Place Your Bet</h3>
+            <label for="fight-select">Select a Fight:</label>
+            <select id="fight-select" class="bet-input">
+                <option value="">Select Fight</option>
+            </select>
+
+            <input type="text" id="bet-name" placeholder="Your Name" class="bet-input">
+            <input type="number" id="bet-amount" placeholder="Bet Amount ($)" class="bet-input">
+            <select id="bet-fighter" class="bet-input" disabled>
+                <option value="">Select Fighter</option>
+            </select>
+            <button class="button" onclick="placeBet()">Place Bet</button>
+        </div>
+
+        <div id="total-bet-section">
+            <h3>Total Bets Per Fight</h3>
+            <div id="bet-summary">
+                <!-- Total bets per fight will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fights = [];
+        let fighters = {}; // Track fighter earnings
+        let currentFightIndex = 0;
+        const housePercentage = 0.15;
+        const fighterPercentage = 0.05;
+
+        function createFight() {
+            const fighter1 = document.getElementById('fighter1-name').value;
+            const fighter2 = document.getElementById('fighter2-name').value;
+            const payout1 = parseFloat(document.getElementById('fighter1-payout').value);
+            const payout2 = parseFloat(document.getElementById('fighter2-payout').value);
+
+            if (fighter1 && fighter2 && payout1 && payout2) {
+                const fightCard = document.createElement("div");
+                fightCard.classList.add("fight-card");
+                fightCard.id = `fight-${currentFightIndex}`;
+
+                const fightContent = `
+                    <div class="fight-card-header">
+                        <p><strong>${fighter1}</strong> vs <strong>${fighter2}</strong></p>
+                        <p>Fighter 1: ${payout1}x | Fighter 2: ${payout2}x</p>
+                    </div>
+                    <p class="total-bet" id="total-bet-${currentFightIndex}">Total Bet Amount: $0</p>
+                    <button class="button" onclick="endFight(${currentFightIndex})">End Fight</button>
+                    <button class="button" onclick="deleteFight(${currentFightIndex})">Delete Fight</button>
+                    <div class="result" id="result-${currentFightIndex}"></div>
+                    <div class="bet-details" id="bet-details-${currentFightIndex}"></div>
+                `;
+                fightCard.innerHTML = fightContent;
+                document.getElementById("fight-list").appendChild(fightCard);
+
+                fights.push({ fighter1, fighter2, payout1, payout2, bets: [], totalBet1: 0, totalBet2: 0 });
+
+                const fightSelect = document.getElementById('fight-select');
+                const fightOption = document.createElement('option');
+                fightOption.value = currentFightIndex;
+                fightOption.text = `${fighter1} vs ${fighter2}`;
+                fightSelect.appendChild(fightOption);
+
+                document.getElementById('fighter1-name').value = '';
+                document.getElementById('fighter2-name').value = '';
+                document.getElementById('fighter1-payout').value = '';
+                document.getElementById('fighter2-payout').value = '';
+
+                currentFightIndex++;
+            } else {
+                alert("Please fill all fields!");
+            }
+        }
+
+        function updateFighterStats() {
+            const statsContainer = document.getElementById('fighter-stats');
+            statsContainer.innerHTML = ''; // Clear existing stats
+
+            Object.keys(fighters).forEach(fighter => {
+                const earnings = fighters[fighter];
+                const fighterItem = document.createElement('p');
+                fighterItem.classList.add('fighter-item');
+                fighterItem.textContent = `${fighter}: $${earnings.toFixed(2)}`;
+                statsContainer.appendChild(fighterItem);
+            });
+        }
+
+        document.getElementById('fight-select').addEventListener('change', function() {
+            const selectedFightIndex = this.value;
+            const betFighterSelect = document.getElementById('bet-fighter');
+            
+            if (selectedFightIndex) {
+                betFighterSelect.disabled = false;
+
+                const fight = fights[selectedFightIndex];
+                
+                betFighterSelect.innerHTML = '<option value="">Select Fighter</option>';
+                
+                const fighter1Option = document.createElement('option');
+                fighter1Option.value = `fight-${selectedFightIndex}-1`;
+                fighter1Option.text = fight.fighter1;
+                betFighterSelect.appendChild(fighter1Option);
+                
+                const fighter2Option = document.createElement('option');
+                fighter2Option.value = `fight-${selectedFightIndex}-2`;
+                fighter2Option.text = fight.fighter2;
+                betFighterSelect.appendChild(fighter2Option);
+            } else {
+                betFighterSelect.disabled = true;
+            }
+        });
+
+        function placeBet() {
+            const fightIndex = document.getElementById('fight-select').value;
+            const name = document.getElementById('bet-name').value;
+            const amount = parseFloat(document.getElementById('bet-amount').value);
+            const selectedFighter = document.getElementById('bet-fighter').value;
+
+            if (fightIndex !== "" && name && amount && selectedFighter) {
+                const fighterIndex = selectedFighter.split('-')[2];
+                const fight = fights[fightIndex];
+                const multiplier = fighterIndex === '1' ? fight.payout1 : fight.payout2;
+                const betInfo = {
+                    name,
+                    amount,
+                    multiplier,
+                    payout: amount * multiplier
+                };
+
+                if (fighterIndex === '1') {
+                    fight.totalBet1 += amount;
+                } else {
+                    fight.totalBet2 += amount;
+                }
+
+                const betSection = document.getElementById(`bet-details-${fightIndex}`);
+                const betDetails = document.createElement("p");
+                betDetails.textContent = `${betInfo.name} bet $${betInfo.amount} on ${
+                    fighterIndex === '1' ? fight.fighter1 : fight.fighter2
+                }. Payout: $${betInfo.payout.toFixed(2)}`;
+                betSection.appendChild(betDetails);
+
+                fights[fightIndex].bets.push(betInfo);
+
+                updateTotalBets(fightIndex);
+                updateFighterStats(); // Update the fighter stats after placing the bet
+            }
+        }
+
+        function updateTotalBets(fightIndex) {
+            const fight = fights[fightIndex];
+            const totalBetElement = document.getElementById(`total-bet-${fightIndex}`);
+            totalBetElement.textContent = `Total Bet Amount: $${(fight.totalBet1 + fight.totalBet2).toFixed(2)}`;
+        }
+
+        function endFight(fightIndex) {
+            const fight = fights[fightIndex];
+            const resultSection = document.getElementById(`result-${fightIndex}`);
+            resultSection.style.display = 'block';
+
+            const winner = prompt("Enter the winner (1 for Fighter 1 or 2 for Fighter 2):");
+
+            const winnerPayout = winner === "1" ? fight.payout1 : fight.payout2;
+            const winnerText = winner === "1" ? fight.fighter1 : fight.fighter2;
+            const commission = housePercentage;
+
+            let totalHousePayment = 0;
+            let totalFighterPayment = 0;
+
+            fight.bets.forEach(bet => {
+                let payout = bet.amount * bet.multiplier;
+
+                if ((winner === "1" && bet.multiplier === fight.payout1) || (winner === "2" && bet.multiplier === fight.payout2)) {
+                    payout -= payout * commission;
+                    totalHousePayment += payout * commission;
+                    totalFighterPayment += payout * fighterPercentage;
+
+                    resultSection.innerHTML += `<p>${bet.name} bet on ${winnerText} and will receive $${payout.toFixed(2)} <span class="delete-button" onclick="deletePayout(${fightIndex}, '${bet.name}')">Delete</span></p>`;
+                } else {
+                    const lostAmount = bet.amount;
+                    const lostToHouse = lostAmount * 0.95;
+                    const lostToFighter = lostAmount * 0.05;
+
+                    totalHousePayment += lostToHouse;
+                    totalFighterPayment += lostToFighter;
+
+                    resultSection.innerHTML += `<p>${bet.name} lost their bet on ${winnerText}. Lost $${lostAmount.toFixed(2)}. 95% goes to the house ($${lostToHouse.toFixed(2)}) and 5% goes to ${winnerText} ($${lostToFighter.toFixed(2)})</p>`;
+                }
+            });
+
+            resultSection.innerHTML += `<p>Total House Payment: $${totalHousePayment.toFixed(2)}</p>`;
+            resultSection.innerHTML += `<p>Total Fighter Payment (5% of losses): $${totalFighterPayment.toFixed(2)}</p>`;
+
+            // Update fighter earnings
+            if (!fighters[fight.fighter1]) {
+                fighters[fight.fighter1] = 0;
+            }
+            if (!fighters[fight.fighter2]) {
+                fighters[fight.fighter2] = 0;
+            }
+
+            if (winner === "1") {
+                fighters[fight.fighter1] += totalFighterPayment;
+            } else {
+                fighters[fight.fighter2] += totalFighterPayment;
+            }
+
+            updateFighterStats(); // Update the fighter statistics after the fight ends
+        }
+
+        function deleteFight(fightIndex) {
+            const fightCard = document.getElementById(`fight-${fightIndex}`);
+            fightCard.remove();
+
+            // Remove from fight select options
+            const fightSelect = document.getElementById('fight-select');
+            fightSelect.remove(fightIndex + 1); // Remove the fight option in the bet selection
+
+            // Update fighter statistics to reflect any changes
+            updateFighterStats();
+        }
+    </script>
+</body>
+</html>
